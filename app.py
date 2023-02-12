@@ -7,9 +7,13 @@ import skimage
 import keras.api._v2.keras as keras
 import os
 import uuid
+from mangum import Mangum
 
 app = FastAPI()
-IMAGEDIR = "upload-images/"
+handler = Mangum(app)
+
+#Change directory to /tmp folder
+IMAGEDIR = "/tmp/"
 IMAGE_SIZE = 64
 
 def load_img(filePath, imgSize, model):
