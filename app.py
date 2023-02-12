@@ -1,13 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import uvicorn
 import numpy as np
 import cv2
 import skimage
 import keras.api._v2.keras as keras
-
+import os
+import uuid
 
 app = FastAPI()
+IMAGEDIR = "upload-images/"
+IMAGE_SIZE = 64
 
 def load_img(filePath, imgSize, model):
     dictLabels = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9, 'K': 10, 'L': 11,
@@ -32,21 +35,30 @@ def load_img(filePath, imgSize, model):
     confidencePercentage = max(prediction[0])
     return letter, confidencePercentage
 
+
 @app.get('/')
-def predictSample():
+def getSample():
     return JSONResponse({"result": "hello world"})
 
 @app.post('/')
-def postImage():
-    imageSize = 64
+async def predict(file: UploadFile = File(...)):
+    file.filename = f"{uuid.uuid4()}.jpg"
+    filePath = f"{IMAGEDIR}{file.filename}"
+    contents = await file.read()  # <-- Important!
+
+    # example of how you can save the file
+    with open(filePath, "wb") as f:
+        f.write(contents)
+    # filePath = "..\\F.jpg"
+
     # load model
     model_path = "model"
     model = keras.models.load_model(model_path)
 
     # sample code to load image and predict it with confidence
-    filePath = "..\\F.jpg"
-    predictLetter, confidence = load_img(filePath, imageSize, model)
-    print(predictLetter + ": " + str(confidence * 100) + "%")
+    predictLetter, confidence = load_img(filePath, IMAGE_SIZE, model)
+
+    os.remove(filePath)
     return JSONResponse({"Letter": predictLetter, "Confidence": str(confidence * 100) + "%"})
 
 
